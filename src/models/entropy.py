@@ -9,6 +9,7 @@ Plus l'entropie est élevée, plus la valeur est difficile à deviner.
 """
 import math
 from collections import Counter
+import string
 
 
 def calculate_entropy(value: str) -> float:
@@ -84,14 +85,18 @@ def calculate_entropy(username: str, password: str) -> dict:
             "entropy": None
         }
 
-    # Calculer l'entropie
-    counter = Counter(password)
-    length = len(password)
-    entropy = 0.0
+     # Comptage des caractères uniques par catégorie
+    lower_used = len(set(c for c in password if c.islower())) * math.log2(26)
+    upper_used = len(set(c for c in password if c.isupper())) * math.log2(26)
+    digits_used = len(set(c for c in password if c.isdigit())) * math.log2(10)
+    symbols_used = len(set(c for c in password if c in string.punctuation)) * math.log2(33)
 
-    for count in counter.values():
-        p_i = count / length
-        entropy -= p_i * math.log2(p_i)
+    # Alphabet effectif = somme des caractères uniques utilisés dans chaque catégorie
+    alphabet_size = lower_used + upper_used + digits_used + symbols_used
+    length = len(password)
+
+    # Calcul de l'entropie
+    entropy = length * math.log2(alphabet_size) if alphabet_size > 0 else 0
 
     return {
         "valid": True,

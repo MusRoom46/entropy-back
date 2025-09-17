@@ -1,7 +1,19 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, request, jsonify
 from models.entropy import calculate_entropy
+from models.user import User
+from config.db import db
+from Crypto.Cipher import AES
+import base64
+import os
+
+from config.config import Config
 
 bp = Blueprint("routes", __name__)
+
+def pad(data: bytes) -> bytes:
+    """Ajoute du padding PKCS7 pour AES (bloc de 16 octets)."""
+    padding_len = 16 - len(data) % 16
+    return data + bytes([padding_len]) * padding_len
 
 @bp.route("/entropy", methods=["POST"])
 def entropy_endpoint():
@@ -45,6 +57,25 @@ def entropy_register():
             "errors": result["errors"],
             "entropy": None
         }), 400
+    
+    # Chiffrement AES sur 32 octets
+    cipher = AES.new(Config.AES_KEY.encode("utf-8")[:32], AES.MODE_CBC)
+    encrypted_pwd = cipher.encrypt(pad(password.encode("utf-8")))
+
+    # Vérification si l'utilisateur existe déjà
+    existing_user = User.query.filter_by(username=username).first()
+
+    if existing_user:
+        return jsonify({"error": "Utilisateur déjà existant"}), 400
+
+    # Stockage DB
+    new_user = User(
+        username=username,
+        password_encrypted=encrypted_pwd,
+        entropy=result["entropy"]
+    )
+    db.session.add(new_user)
+    db.session.commit()
 
     # Si valide → renvoyer la valeur de l'entropie
     return jsonify({
