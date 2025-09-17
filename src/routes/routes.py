@@ -249,3 +249,25 @@ def update_role():
         "message": f"Le rôle de {username} a été mis à jour en '{new_role}'"
     }), 200
 
+@bp.route("/logout", methods=["POST"])
+def logout():
+    """
+    Endpoint /logout
+    ----------------
+    Supprime le cookie JWT afin de déconnecter l'utilisateur.
+    """
+    response = make_response(jsonify({
+        "message": "Déconnexion réussie"
+    }), 200)
+
+    # Suppression du cookie côté client
+    response.set_cookie(
+        "access_token",
+        "",
+        httponly=True,
+        secure=False,
+        samesite="Lax",
+        max_age=0
+    )
+
+    return response
