@@ -1,44 +1,7 @@
-"""
-entropy.py
------------
-Ce module calcule l'entropie d'une chaîne (mot de passe, clé ou valeur aléatoire).
-
-Définition :
-L'entropie mesure le niveau d'incertitude ou de "désordre".
-Plus l'entropie est élevée, plus la valeur est difficile à deviner.
-"""
-import math
-from collections import Counter
-import string
-
-
-def calculate_entropy(value: str) -> float:
-    """ calculate_entropy - Calcule l'entropie d'une chaîne de caractères.
-
-    :param value: La chaîne de caractères dont on veut calculer l'entropie.
-    :return: L'entropie de la chaîne.
-    """
-    """
-entropy.py
------------
-Ce module calcule l'entropie d'un mot de passe ou d'une chaîne,
-avec une vérification préalable des critères de robustesse.
-
-Critères imposés :
-- Au moins 12 caractères
-- Au moins 1 majuscule
-- Au moins 1 minuscule
-- Au moins 1 chiffre
-- Au moins 1 caractère spécial
-
-Formule utilisée pour l'entropie :
-    H = - ∑ (p_i * log2(p_i))
-    où p_i est la probabilité d'apparition du caractère i.
-"""
-
 import math
 import re
 from collections import Counter
+import string
 
 
 def calculate_entropy(username: str, password: str) -> dict:
