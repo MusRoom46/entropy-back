@@ -1,3 +1,4 @@
+import os
 from flask import Flask
 from routes.routes import bp
 from config.config import Config
@@ -21,4 +22,9 @@ if __name__ == "__main__":
     app = create_app()
     with app.app_context():
         db.create_all()  # Crée les tables si elles n'existent pas
-    app.run(debug=True)
+
+    port = int(os.getenv("PORT", 5000))
+
+    # IMPORTANT : écouter sur 0.0.0.0 pour render
+    app.run(host="0.0.0.0", port=port, debug=False)
+
