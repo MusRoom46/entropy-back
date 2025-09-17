@@ -1,6 +1,7 @@
 import math
 import re
 from collections import Counter
+import string
 
 
 def calculate_entropy(username: str, password: str) -> dict:
