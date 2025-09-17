@@ -99,27 +99,31 @@ def entropy_register():
     """
     Endpoint /register
     ------------------
-    Reçoit un mot de passe, vérifie sa validité
-    et calcule son entropie si les critères sont respectés.
+    Reçoit un mot de passe, vérifie sa validité,
+    calcule son entropie et sa redondance
+    puis enregistre l'utilisateur si valide.
 
     Expects JSON: { "username": "john", "password": "Password123!" }
     """
     data = request.get_json()
 
     if not data or "username" not in data or "password" not in data:
-        return jsonify({"error": "Champ 'value' manquant"}), 400
+        return jsonify({"error": "Champs 'username' et 'password' requis"}), 400
 
     username, password = data["username"], data["password"]
 
-    # Calcule l'entropie
+    # Calcul des métriques
     result = calculate_entropy(username, password)
 
+    # Gestion si invalide
     if not result["valid"]:
         return jsonify({
             "value": [username, password],
             "valid": False,
             "errors": result["errors"],
-            "entropy": None,
+            "entropy_bits": None,
+            "redundancy_percent": None,
+            "components": result["components"],
         }), 400
 
     # Chiffrement AES
@@ -127,14 +131,16 @@ def entropy_register():
     cipher = AES.new(key, AES.MODE_CBC, iv=b"0123456789abcdef")
     encrypted_pwd = cipher.encrypt(pad(password.encode("utf-8")))
 
+    # Vérifie si l'utilisateur existe déjà
     existing_user = User.query.filter_by(username=username).first()
     if existing_user:
         return jsonify({"error": "Utilisateur déjà existant"}), 400
 
+    # Sauvegarde en base (stocke aussi l'entropie)
     new_user = User(
         username=username,
         password_encrypted=encrypted_pwd,
-        entropy=result["entropy"],
+        entropy=result["entropy_bits"],  # champ adapté
     )
     db.session.add(new_user)
     db.session.commit()
@@ -143,7 +149,9 @@ def entropy_register():
         "value": [username, password],
         "valid": True,
         "errors": [],
-        "entropy": result["entropy"],
+        "entropy_bits": result["entropy_bits"],
+        "redundancy_percent": result["redundancy_percent"],
+        "components": result["components"],  # R1, R2, R3
     }), 200
 
 
