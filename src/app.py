@@ -27,4 +27,3 @@ if __name__ == "__main__":
 
     # IMPORTANT : écouter sur 0.0.0.0 pour render
     app.run(host="0.0.0.0", port=port, debug=False)
-
