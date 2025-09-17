@@ -34,6 +34,12 @@ def entropy_login():
     chiffre le mot de passe comme dans /register,
     compare avec celui en BDD,
     puis génère un JWT contenant le rôle.
+
+    Expects JSON:
+    {
+        "username": "john",
+        "password": "Password123!"
+    }
     """
     data = request.get_json()
 
@@ -57,7 +63,7 @@ def entropy_login():
     if encrypted_pwd != user.password_encrypted:
         return jsonify({"error": "Mot de passe incorrect"}), 401
 
-    # Génération d’un JWT avec le rôle
+    # Génération d'un JWT avec le rôle
     payload = {
         "sub": user.username,
         "role": getattr(user, "role", "user"),
@@ -97,6 +103,12 @@ def entropy_register():
     - Si le champ "username" ou "password" sont absents → erreur 400
     - Si le mot de passe est invalide → retour avec erreurs
     - Si valide → retour avec l'entropie
+
+    Expects JSON:
+    {
+        "username": "john",
+        "password": "Password123!"
+    }
     """
     # Récupère le JSON envoyé par le client
     data = request.get_json()
@@ -147,7 +159,93 @@ def entropy_register():
         "entropy": result["entropy"]
     }), 200
 
-@bp.route("/profile", methods=["GET"])
-def entropy_profile():
-    # TODO: Implémenter la logique pour le profile
-    return ""
+@bp.route("/dashboard", methods=["GET"])
+def entropy_dashboard():
+    """
+    Endpoint /dashboard
+    -------------------
+    Accessible uniquement par un utilisateur avec le rôle "admin".
+    Retourne la liste de tous les utilisateurs.
+    """
+    token = request.cookies.get("access_token")
+    if not token:
+        return jsonify({"error": "Accès refusé : token manquant"}), 401
+
+    try:
+        # Décoder le JWT
+        payload = jwt.decode(token, Config.JWT_SECRET, algorithms=["HS256"])
+    except jwt.ExpiredSignatureError:
+        return jsonify({"error": "Session expirée, veuillez vous reconnecter"}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({"error": "Token invalide"}), 401
+
+    # Vérifier le rôle
+    if payload.get("role") != "admin":
+        return jsonify({"error": "Accès interdit : vous n'avez pas les droits"}), 403
+
+    # Récupérer tous les utilisateurs en BDD
+    users = User.query.all()
+    users_data = [
+        {
+            "id": user.id,
+            "username": user.username,
+            "entropy": user.entropy,
+            "role": getattr(user, "role", "user")
+        }
+        for user in users
+    ]
+
+    return jsonify({
+        "message": "Dashboard admin",
+        "users": users_data
+    }), 200
+
+@bp.route("/update-role", methods=["POST"])
+def update_role():
+    """
+    Endpoint /update-role
+    ---------------------
+    Permet à un admin de modifier le rôle d'un utilisateur.
+    Expects JSON:
+    {
+        "username": "john",
+        "new_role": "admin"
+    }
+    """
+    # Vérification du token JWT
+    token = request.cookies.get("access_token")
+    if not token:
+        return jsonify({"error": "Accès refusé : token manquant"}), 401
+
+    try:
+        payload = jwt.decode(token, Config.JWT_SECRET, algorithms=["HS256"])
+    except jwt.ExpiredSignatureError:
+        return jsonify({"error": "Session expirée"}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({"error": "Token invalide"}), 401
+
+    # Seul un admin peut modifier les rôles
+    if payload.get("role") != "admin":
+        return jsonify({"error": "Accès interdit : droits insuffisants"}), 403
+
+    # Récupération des données JSON
+    data = request.get_json()
+    if not data or "username" not in data or "new_role" not in data:
+        return jsonify({"error": "Champs 'username' et 'new_role' requis"}), 400
+
+    username = data["username"]
+    new_role = data["new_role"]
+
+    # Vérification que l'utilisateur existe
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({"error": "Utilisateur introuvable"}), 404
+
+    # Mise à jour du rôle
+    user.role = new_role
+    db.session.commit()
+
+    return jsonify({
+        "message": f"Le rôle de {username} a été mis à jour en '{new_role}'"
+    }), 200
+
