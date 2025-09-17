@@ -1,6 +1,5 @@
 import math
 import re
-from collections import Counter
 import string
 
 
@@ -26,35 +25,45 @@ def calculate_entropy(username: str, password: str) -> dict:
 
     # Vérifie présence d'une majuscule
     if not re.search(r"[A-Z]", password):
-        errors.append("Le mot de passe doit contenir au moins une majuscule.")
+        errors.append(
+            "Le mot de passe doit contenir au moins une majuscule."
+        )
 
     # Vérifie présence d'une minuscule
     if not re.search(r"[a-z]", password):
-        errors.append("Le mot de passe doit contenir au moins une minuscule.")
+        errors.append(
+            "Le mot de passe doit contenir au moins une minuscule."
+        )
 
     # Vérifie présence d'un chiffre
     if not re.search(r"[0-9]", password):
-        errors.append("Le mot de passe doit contenir au moins un chiffre.")
+        errors.append(
+            "Le mot de passe doit contenir au moins un chiffre."
+        )
 
     # Vérifie présence d'un caractère spécial
     if not re.search(r"[^a-zA-Z0-9]", password):
-        errors.append("Le mot de passe doit contenir au moins un caractère spécial.")
+        errors.append(
+            "Le mot de passe doit contenir au moins un caractère spécial."
+        )
 
     # Si critères non respectés, retourne les erreurs
     if errors:
         return {
             "valid": False,
             "errors": errors,
-            "entropy": None
+            "entropy": None,
         }
 
-     # Comptage des caractères uniques par catégorie
+    # Comptage des caractères uniques par catégorie
     lower_used = len(set(c for c in password if c.islower())) * math.log2(26)
     upper_used = len(set(c for c in password if c.isupper())) * math.log2(26)
     digits_used = len(set(c for c in password if c.isdigit())) * math.log2(10)
-    symbols_used = len(set(c for c in password if c in string.punctuation)) * math.log2(33)
+    symbols_used = len(
+        set(c for c in password if c in string.punctuation)
+    ) * math.log2(33)
 
-    # Alphabet effectif = somme des caractères uniques utilisés dans chaque catégorie
+    # Alphabet effectif = somme des caractères uniques utilisés
     alphabet_size = lower_used + upper_used + digits_used + symbols_used
     length = len(password)
 
@@ -64,5 +73,5 @@ def calculate_entropy(username: str, password: str) -> dict:
     return {
         "valid": True,
         "errors": [],
-        "entropy": entropy
+        "entropy": entropy,
     }

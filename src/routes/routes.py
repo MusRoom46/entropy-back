@@ -5,16 +5,18 @@ from config.db import db
 from Crypto.Cipher import AES
 import jwt
 import datetime
-import hmac
 
 from config.config import Config
 
+
 bp = Blueprint("routes", __name__)
+
 
 def pad(data: bytes) -> bytes:
     """Ajoute du padding PKCS7 pour AES (bloc de 16 octets)."""
     padding_len = 16 - len(data) % 16
     return data + bytes([padding_len]) * padding_len
+
 
 def unpad(data: bytes) -> bytes:
     """Retire le padding PKCS7."""
@@ -24,6 +26,7 @@ def unpad(data: bytes) -> bytes:
     if padding_len < 1 or padding_len > 16:
         raise ValueError("Invalid padding length")
     return data[:-padding_len]
+
 
 @bp.route("/login", methods=["POST"])
 def entropy_login():
@@ -35,17 +38,15 @@ def entropy_login():
     compare avec celui en BDD,
     puis génère un JWT contenant le rôle.
 
-    Expects JSON:
-    {
-        "username": "john",
-        "password": "Password123!"
-    }
+    Expects JSON: { "username": "john", "password": "Password123!" }
     """
     data = request.get_json()
 
     # Vérification des champs requis
     if not data or "username" not in data or "password" not in data:
-        return jsonify({"error": "Champs 'username' et 'password' requis"}), 400
+        return jsonify({
+            "error": "Champs 'username' et 'password' requis"
+        }), 400
 
     username, password = data["username"], data["password"]
 
@@ -68,7 +69,7 @@ def entropy_login():
         "sub": user.username,
         "role": getattr(user, "role", "user"),
         "iat": datetime.datetime.utcnow(),
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1),
     }
     token = jwt.encode(payload, Config.JWT_SECRET, algorithm="HS256")
 
@@ -77,20 +78,21 @@ def entropy_login():
         "message": "Connexion réussie",
         "username": user.username,
         "role": payload["role"],
-        "token": token
+        "token": token,
     }), 200)
 
-    # Enregistrement du token dans un cookie HttpOnly (optionnel mais recommandé)
+    # Enregistrement du token dans un cookie HttpOnly
     response.set_cookie(
         "access_token",
         token,
         httponly=True,
         secure=False,
         samesite="Lax",
-        max_age=3600
+        max_age=3600,
     )
 
     return response
+
 
 @bp.route("/register", methods=["POST"])
 def entropy_register():
@@ -100,64 +102,50 @@ def entropy_register():
     Reçoit un mot de passe, vérifie sa validité
     et calcule son entropie si les critères sont respectés.
 
-    - Si le champ "username" ou "password" sont absents → erreur 400
-    - Si le mot de passe est invalide → retour avec erreurs
-    - Si valide → retour avec l'entropie
-
-    Expects JSON:
-    {
-        "username": "john",
-        "password": "Password123!"
-    }
+    Expects JSON: { "username": "john", "password": "Password123!" }
     """
-    # Récupère le JSON envoyé par le client
     data = request.get_json()
 
-    # Vérifie que la clé "value" existe dans le JSON
     if not data or "username" not in data or "password" not in data:
         return jsonify({"error": "Champ 'value' manquant"}), 400
 
     username, password = data["username"], data["password"]
-    
-    # Calcule l'entropie avec la fonction définie dans entropy.py
+
+    # Calcule l'entropie
     result = calculate_entropy(username, password)
 
-    # Si le mot de passe est invalide → renvoyer les erreurs
     if not result["valid"]:
         return jsonify({
             "value": [username, password],
             "valid": False,
             "errors": result["errors"],
-            "entropy": None
+            "entropy": None,
         }), 400
-    
-    # Chiffrement AES sur 32 octets
+
+    # Chiffrement AES
     key = Config.AES_KEY.encode("utf-8")[:32]
     cipher = AES.new(key, AES.MODE_CBC, iv=b"0123456789abcdef")
     encrypted_pwd = cipher.encrypt(pad(password.encode("utf-8")))
 
-    # Vérification si l'utilisateur existe déjà
     existing_user = User.query.filter_by(username=username).first()
-
     if existing_user:
         return jsonify({"error": "Utilisateur déjà existant"}), 400
 
-    # Stockage DB
     new_user = User(
         username=username,
         password_encrypted=encrypted_pwd,
-        entropy=result["entropy"]
+        entropy=result["entropy"],
     )
     db.session.add(new_user)
     db.session.commit()
 
-    # Si valide → renvoyer la valeur de l'entropie
     return jsonify({
         "value": [username, password],
         "valid": True,
         "errors": [],
-        "entropy": result["entropy"]
+        "entropy": result["entropy"],
     }), 200
+
 
 @bp.route("/dashboard", methods=["GET"])
 def entropy_dashboard():
@@ -172,33 +160,33 @@ def entropy_dashboard():
         return jsonify({"error": "Accès refusé : token manquant"}), 401
 
     try:
-        # Décoder le JWT
         payload = jwt.decode(token, Config.JWT_SECRET, algorithms=["HS256"])
     except jwt.ExpiredSignatureError:
-        return jsonify({"error": "Session expirée, veuillez vous reconnecter"}), 401
+        return jsonify({"error": "Session expirée"}), 401
     except jwt.InvalidTokenError:
         return jsonify({"error": "Token invalide"}), 401
 
-    # Vérifier le rôle
     if payload.get("role") != "admin":
-        return jsonify({"error": "Accès interdit : vous n'avez pas les droits"}), 403
+        return jsonify({
+            "error": "Accès interdit : vous n'avez pas les droits"
+        }), 403
 
-    # Récupérer tous les utilisateurs en BDD
     users = User.query.all()
     users_data = [
         {
             "id": user.id,
             "username": user.username,
             "entropy": user.entropy,
-            "role": getattr(user, "role", "user")
+            "role": getattr(user, "role", "user"),
         }
         for user in users
     ]
 
     return jsonify({
         "message": "Dashboard admin",
-        "users": users_data
+        "users": users_data,
     }), 200
+
 
 @bp.route("/update-role", methods=["POST"])
 def update_role():
@@ -206,13 +194,9 @@ def update_role():
     Endpoint /update-role
     ---------------------
     Permet à un admin de modifier le rôle d'un utilisateur.
-    Expects JSON:
-    {
-        "username": "john",
-        "new_role": "admin"
-    }
+
+    Expects JSON: { "username": "john", "new_role": "admin" }
     """
-    # Vérification du token JWT
     token = request.cookies.get("access_token")
     if not token:
         return jsonify({"error": "Accès refusé : token manquant"}), 401
@@ -224,30 +208,31 @@ def update_role():
     except jwt.InvalidTokenError:
         return jsonify({"error": "Token invalide"}), 401
 
-    # Seul un admin peut modifier les rôles
     if payload.get("role") != "admin":
-        return jsonify({"error": "Accès interdit : droits insuffisants"}), 403
+        return jsonify({
+            "error": "Accès interdit : droits insuffisants"
+        }), 403
 
-    # Récupération des données JSON
     data = request.get_json()
     if not data or "username" not in data or "new_role" not in data:
-        return jsonify({"error": "Champs 'username' et 'new_role' requis"}), 400
+        return jsonify({
+            "error": "Champs 'username' et 'new_role' requis"
+        }), 400
 
     username = data["username"]
     new_role = data["new_role"]
 
-    # Vérification que l'utilisateur existe
     user = User.query.filter_by(username=username).first()
     if not user:
         return jsonify({"error": "Utilisateur introuvable"}), 404
 
-    # Mise à jour du rôle
     user.role = new_role
     db.session.commit()
 
     return jsonify({
         "message": f"Le rôle de {username} a été mis à jour en '{new_role}'"
     }), 200
+
 
 @bp.route("/logout", methods=["POST"])
 def logout():
@@ -260,14 +245,13 @@ def logout():
         "message": "Déconnexion réussie"
     }), 200)
 
-    # Suppression du cookie côté client
     response.set_cookie(
         "access_token",
         "",
         httponly=True,
         secure=False,
         samesite="Lax",
-        max_age=0
+        max_age=0,
     )
 
     return response

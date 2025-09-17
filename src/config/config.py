@@ -1,5 +1,6 @@
 import os
 
+
 class Config:
     # URI de connexion PostgreSQL
     SQLALCHEMY_DATABASE_URI = os.getenv(
