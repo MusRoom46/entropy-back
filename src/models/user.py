@@ -1,5 +1,6 @@
 from config.db import db
 
+
 class User(db.Model):
     __tablename__ = "users"
 
@@ -7,7 +8,11 @@ class User(db.Model):
     username = db.Column(db.String(150), unique=True, nullable=False)
     password_encrypted = db.Column(db.LargeBinary, nullable=False)
     entropy = db.Column(db.Float, nullable=False)
-    role = db.Column(db.String(5), nullable=False, default="user") # "user" ou "admin"
+    role = db.Column(
+        db.String(5),
+        nullable=False,
+        default="user"
+    )  # rôles possibles : "user" ou "admin"
 
     def __repr__(self):
         return f"<User {self.username}>"
