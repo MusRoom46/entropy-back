@@ -5,7 +5,7 @@ class Config:
     # URI de connexion PostgreSQL
     SQLALCHEMY_DATABASE_URI = os.getenv(
         "DATABASE_URL",
-        "postgresql://entropy_user:entropy_pass@localhost:5432/entropy_db"
+        "postgresql://entropy_user:jFbVHCBlEMXRF3ama0g3rnoihkO9tS90@dpg-d35bprvfte5s73b3spd0-a.frankfurt-postgres.render.com/entropy_db"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
