@@ -118,7 +118,7 @@ def entropy_register():
     # Gestion si invalide
     if not result["valid"]:
         return jsonify({
-            "value": [username, password],
+            "value": [username],
             "valid": False,
             "errors": result["errors"],
             "entropy_bits": None,
