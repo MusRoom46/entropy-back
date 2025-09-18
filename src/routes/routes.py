@@ -53,7 +53,7 @@ def entropy_login():
     # Récupération de l'utilisateur
     user = User.query.filter_by(username=username).first()
     if not user:
-        return jsonify({"error": "Utilisateur inexistant"}), 401
+        return jsonify({"error": "Utilisateur ou mot de passe incorrect"}), 401
 
     # Chiffrement AES (même méthode que register)
     key = Config.AES_KEY.encode("utf-8")[:32]
@@ -62,7 +62,7 @@ def entropy_login():
 
     # Vérification du mot de passe chiffré
     if encrypted_pwd != user.password_encrypted:
-        return jsonify({"error": "Mot de passe incorrect"}), 401
+        return jsonify({"error": "Utilisateur ou mot de passe incorrect"}), 401
 
     # Génération d'un JWT avec le rôle
     payload = {
