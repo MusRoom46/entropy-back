@@ -1,5 +1,6 @@
 import os
 from flask import Flask
+from flask_cors import CORS
 from routes.routes import bp
 from config.config import Config
 from config.db import db
@@ -14,6 +15,9 @@ def create_app():
 
     # Register routes
     app.register_blueprint(bp)
+
+    # Enable CORS for frontend domain
+    CORS(app, origins=["https://entropy-front.onrender.com"])
 
     return app
 
