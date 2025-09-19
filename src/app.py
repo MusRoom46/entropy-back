@@ -10,14 +10,18 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    # Init DB
-    db.init_app(app)
+    # Keep cookie settings consistent with our Config defaults
+    app.config["SESSION_COOKIE_SAMESITE"] = Config.COOKIE_SAMESITE
+    app.config["SESSION_COOKIE_SECURE"] = Config.COOKIE_SECURE
 
-    # Register routes
+    db.init_app(app)
     app.register_blueprint(bp)
 
-    # Enable CORS for frontend domain
-    CORS(app, origins=["https://entropy-front.onrender.com"])
+    CORS(
+        app,
+        resources={r"/*": {"origins": Config.CORS_ALLOWED_ORIGINS}},
+        supports_credentials=True,
+    )
 
     return app
 
@@ -25,9 +29,7 @@ def create_app():
 if __name__ == "__main__":
     app = create_app()
     with app.app_context():
-        db.create_all()  # Crée les tables si elles n'existent pas
+        db.create_all()
 
     port = int(os.getenv("PORT", 5000))
-
-    # IMPORTANT : écouter sur 0.0.0.0 pour render
     app.run(host="0.0.0.0", port=port, debug=False)
