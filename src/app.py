@@ -21,6 +21,8 @@ def create_app():
         app,
         resources={r"/*": {"origins": Config.CORS_ALLOWED_ORIGINS}},
         supports_credentials=True,
+        allow_headers=Config.CORS_ALLOW_HEADERS,
+        expose_headers=Config.CORS_EXPOSE_HEADERS,
     )
 
     return app

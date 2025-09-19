@@ -12,6 +12,15 @@ from config.config import Config
 bp = Blueprint("routes", __name__)
 
 
+def _get_token_from_request():
+    """Return token from Authorization header or cookie."""
+    auth_header = request.headers.get("Authorization")
+    if auth_header:
+        parts = auth_header.split(" ", 1)
+        if len(parts) == 2 and parts[0].lower() == "bearer":
+            return parts[1].strip()
+    return request.cookies.get("access_token")
+
 def pad(data: bytes) -> bytes:
     """Ajoute du padding PKCS7 pour AES (bloc de 16 octets)."""
     padding_len = 16 - len(data) % 16
@@ -163,7 +172,7 @@ def entropy_dashboard():
     Accessible uniquement par un utilisateur avec le rôle "admin".
     Retourne la liste de tous les utilisateurs.
     """
-    token = request.cookies.get("access_token")
+    token = _get_token_from_request()
     if not token:
         return jsonify({"error": "Accès refusé : token manquant"}), 401
 
@@ -205,7 +214,7 @@ def update_role():
 
     Expects JSON: { "username": "john", "new_role": "admin" }
     """
-    token = request.cookies.get("access_token")
+    token = _get_token_from_request()
     if not token:
         return jsonify({"error": "Accès refusé : token manquant"}), 401
 
