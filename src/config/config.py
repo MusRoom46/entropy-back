@@ -1,14 +1,18 @@
 import os
 
 
-def _split_origins(raw):
+def _split_csv(raw, default):
     if not raw:
-        return [
-            "https://entropy-front.onrender.com",
-            "http://localhost:5173",
-            "http://localhost:3000",
-        ]
-    return [origin.strip() for origin in raw.split(",") if origin.strip()]
+        return default
+    return [item.strip() for item in raw.split(",") if item.strip()]
+
+
+def _split_origins(raw):
+    return _split_csv(raw, [
+        "https://entropy-front.onrender.com",
+        "http://localhost:5173",
+        "http://localhost:3000",
+    ])
 
 
 def _as_bool(value, default):
@@ -40,6 +44,8 @@ class Config:
 
     # Cross origin and cookie handling
     CORS_ALLOWED_ORIGINS = _split_origins(os.getenv("CORS_ALLOWED_ORIGINS"))
+    CORS_ALLOW_HEADERS = _split_csv(os.getenv("CORS_ALLOW_HEADERS"), ["Content-Type", "Authorization"])
+    CORS_EXPOSE_HEADERS = _split_csv(os.getenv("CORS_EXPOSE_HEADERS"), ["Content-Type", "Authorization"])
     ENVIRONMENT = os.getenv("ENVIRONMENT", os.getenv("FLASK_ENV", DEFAULT_ENV)).lower()
     COOKIE_SECURE = _as_bool(os.getenv("COOKIE_SECURE"), ENVIRONMENT == "production")
     COOKIE_SAMESITE = os.getenv(
