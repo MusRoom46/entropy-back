@@ -21,6 +21,7 @@ def _get_token_from_request():
             return parts[1].strip()
     return request.cookies.get("access_token")
 
+
 def pad(data: bytes) -> bytes:
     """Ajoute du padding PKCS7 pour AES (bloc de 16 octets)."""
     padding_len = 16 - len(data) % 16
