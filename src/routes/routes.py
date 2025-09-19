@@ -86,8 +86,8 @@ def entropy_login():
         "access_token",
         token,
         httponly=True,
-        secure=False,
-        samesite="Lax",
+        secure=Config.COOKIE_SECURE,
+        samesite=Config.COOKIE_SAMESITE,
         max_age=3600,
     )
 
@@ -257,8 +257,8 @@ def logout():
         "access_token",
         "",
         httponly=True,
-        secure=False,
-        samesite="Lax",
+        secure=Config.COOKIE_SECURE,
+        samesite=Config.COOKIE_SAMESITE,
         max_age=0,
     )
 
